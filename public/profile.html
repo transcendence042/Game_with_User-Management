@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Pong Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex">
+
+  <!-- Sidebar -->
+  <aside class="w-32 bg-gray-800 flex flex-col items-center py-4 space-y-6">
+    <div class="bg-pong-green text-black font-bold w-12 h-12 rounded-full flex items-center justify-center">
+      🏓
+    </div>
+    <a href="/" class="rounded-full bg-pong-green flex items-center justify-center font-bold">
+      🎮Game
+    </a>
+    <a href="/profile.html" class="p-2 rounded-full bg-gray-700 flex items-center justify-center hover:bg-pong-green transition">
+      👤Profile
+    </a>
+    <a href="/settings.html" class="rounded-full bg-pong-green flex items-center justify-center font-bold">
+      ⚙️Settings
+    </a>
+    <a href="/friendsRequest.html" class="rounded-full bg-pong-green flex items-center justify-center font-bold">
+			<div id="friendsRequest">
+				friend request
+			</div>
+		</a>
+    <button onclick="logout()" class="rounded-full bg-pong-green flex items-center justify-center font-bold">
+      ⏻Logout
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col">
+
+    <!-- Top Navbar -->
+    <nav class="bg-gray-800 shadow-md p-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-pong-green">Profile</h1>
+      <span id="welcomeUser" class="text-gray-300 text-center font-bold text-xl">Welcome!</span>
+      <button>lenguage</button>
+    </nav>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-6 max-w-6xl mx-auto space-y-10">
+
+      <!-- Profile Section -->
+      <section>
+        <h2 class="text-3xl font-bold text-pong-green mb-6">My Profile</h2>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 flex flex-col md:flex-row gap-8 shadow">
+          
+          <!-- Avatar + Actions -->
+          <div class="flex-shrink-0 flex flex-col text-center justify-center w-48">
+            <img id="userAvatar" src="" alt="Avatar" class="w-32 h-32 rounded-full mx-auto border-4 border-gray-600">
+            <input type="file" id="avatarInput" accept="image/*" class="hidden">
+            <button onclick="document.getElementById('avatarInput').click()" class="w-full btn-secondary mt-4">Change Avatar</button>
+            <a href="/changePassword.html"
+              class="w-full inline-flex p-3 mt-4 items-center justify-center
+              bg-indigo-600 text-white font-semibold rounded-lg shadow-md 
+              hover:bg-indigo-700 hover:shadow-lg active:scale-95
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 
+              transition-all duration-200">
+              Change Password
+            </a>
+          </div>
+
+          <!-- Profile Info -->
+          <div class="flex-1 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Username:</label>
+              <span id="username" class="text-lg font-semibold"></span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Display Name:</label>
+              <input type="text" id="displayName" placeholder="Enter display name" class="input-field bg-gray-700 text-white border-gray-600 w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Email:</label>
+              <input type="email" id="email" placeholder="Enter email" class="input-field bg-gray-700 text-white border-gray-600 w-full">
+            </div>
+            <button onclick="updateProfile()" class="btn-primary">Update Profile</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Game Statistics -->
+      <section>
+        <h2 class="text-2xl font-bold text-pong-green mb-6">Game Statistics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-gray-800 border border-gray-700 rounded-lg text-center p-6 shadow">
+            <h3 id="wins" class="text-3xl font-bold text-green-400">0</h3>
+            <p class="text-gray-300">Wins</p>
+          </div>
+          <div class="bg-gray-800 border border-gray-700 rounded-lg text-center p-6 shadow">
+            <h3 id="losses" class="text-3xl font-bold text-red-400">0</h3>
+            <p class="text-gray-300">Losses</p>
+          </div>
+          <div class="bg-gray-800 border border-gray-700 rounded-lg text-center p-6 shadow">
+            <h3 id="winRate" class="text-3xl font-bold text-blue-400">0%</h3>
+            <p class="text-gray-300">Win Rate</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Friends + Match History -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Friends -->
+        <div>
+          <h2 class="text-2xl font-bold text-pong-green mb-4">Friends</h2>
+          <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 shadow">
+            <div class="flex gap-2 mb-4">
+              <input type="text" id="friendUsername" placeholder="Enter username" class="input-field bg-gray-700 text-white border-gray-600 flex-1">
+              <button onclick="sendFriendRequest()" class="btn-primary">Add Friend</button>
+            </div>
+            <div id="friendsList" class="space-y-2">
+              <!-- Friends will be loaded here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Match History -->
+        <div>
+          <h2 class="text-2xl font-bold text-pong-green mb-4">Match History</h2>
+          <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 shadow max-h-96 overflow-y-auto">
+            <div id="matchHistory" class="space-y-3">
+              <!-- Match history will be loaded here -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="initializeSocket.js"></script>
+  <script src="auth.js"></script>
+	<script src="friends.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>
