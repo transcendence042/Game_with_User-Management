@@ -1,6 +1,43 @@
 import bcrypt from 'bcrypt';
 import { User, Friendship, Match } from './db.js';
 import { Op } from 'sequelize';
+import { request } from 'undici';//is used to request information (the user's profile data) from Google after the user authenticates with Google OAuth2.
+
+// Google OAuth2 callback
+export async function authGoogleCallback(req, reply) {
+    const tokenResponse = await req.server.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+  const accessToken = tokenResponse.token.access_token;
+
+  // Fetch user profile from Google
+  const { body } = await request('https://openidconnect.googleapis.com/v1/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const profile = await body.json();
+
+  // Find or create user in DB
+  let user = await User.findOne({ where: { provider: 'google', providerId: profile.sub } });
+  if (!user) {
+    user = await User.create({
+      username: profile.name,
+      email: profile.email,
+      displayName: profile.name,
+      provider: 'google',
+      providerId: profile.sub,
+      avatarUrl: profile.picture,
+      emailVerified: profile.email_verified,
+      password: '', // no password for Google accounts
+    });
+  }
+
+  // Issue your own JWT
+  const myJwt = req.server.jwt.sign(
+    { id: user.id, username: user.username, displayName: user.displayName },
+    { expiresIn: '7d' }
+  );
+
+  // Redirect back to frontend with JWT in URL fragment
+    return reply.redirect(`http://localhost:3000/login.html#token=${myJwt}&viaGoogle=true`);
+}
 
 export async function register(req, reply) {
   const { username, password, emailOptional, displayNameOptional } = req.body;

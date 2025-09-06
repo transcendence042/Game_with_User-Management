@@ -13,14 +13,31 @@ export const User = sequelize.define('User', {
     autoIncrement: true 
   },
   username: { type: DataTypes.STRING, unique: true, allowNull: false },
-  password: { type: DataTypes.STRING, allowNull: false },
+  password: { type: DataTypes.STRING, allowNull: true },
   displayName: { type: DataTypes.STRING, unique: true, allowNull: true },
   email: { type: DataTypes.STRING, unique: true, allowNull: true },
   avatar: { type: DataTypes.STRING, defaultValue: '' },
   wins: { type: DataTypes.INTEGER, defaultValue: 0 },
   losses: { type: DataTypes.INTEGER, defaultValue: 0 },
   isOnline: { type: DataTypes.BOOLEAN, defaultValue: false },
-  lastSeen: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+  lastSeen: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  provider: {
+    type: DataTypes.STRING, // e.g. "local", "google"
+    allowNull: false,
+    defaultValue: 'local',
+  },
+  providerId: {
+    type: DataTypes.STRING, // Google "sub" value
+    allowNull: true,
+  },
+  avatarUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  emailVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
 });
 
 export const Friendship = sequelize.define('Friendship', {

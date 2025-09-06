@@ -62,6 +62,7 @@ A real-time multiplayer Pong game built with Node.js, Socket.io, TypeScript, and
 ## API Endpoints
 
 ### Authentication
+- `GET /auth/google/callback` - Google OAuth callback
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
@@ -115,6 +116,16 @@ A real-time multiplayer Pong game built with Node.js, Socket.io, TypeScript, and
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm
+
+### Google OAuth 2.0 Setup
+1. Create OAuth credentials in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Add your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to a `.env` file:
+   ```env
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   ```
+3. **Never commit your `.env` file to git!**
+4. Ensure `.env` is listed in `.gitignore`.
 
 ### Installation
 

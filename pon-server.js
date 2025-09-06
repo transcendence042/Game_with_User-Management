@@ -7,7 +7,12 @@ import jwt from '@fastify/jwt';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { 
+//Oauth2.0
+import oauthPlugin from '@fastify/oauth2';
+import 'dotenv/config';//by default loads environment variables from a file named .env
+
+import {
+  authGoogleCallback,
   register, 
   login, 
   logout, 
@@ -39,7 +44,24 @@ app.register(fastifyStatic, {
     root: path.join(__dirname, 'public')
 });
 
+// Google OAuth2 setup
+await app.register(oauthPlugin, {
+  name: 'googleOAuth2',
+  scope: ['openid', 'email', 'profile'],
+  credentials: {
+    client: {
+      id: process.env.GOOGLE_CLIENT_ID,
+      secret: process.env.GOOGLE_CLIENT_SECRET,
+    },
+    auth: oauthPlugin.GOOGLE_CONFIGURATION,
+  },
+  startRedirectPath: '/auth/google',
+  callbackUri: 'http://localhost:3000/auth/google/callback',
+});
+
+
 // Auth routes
+app.get('/auth/google/callback', authGoogleCallback);
 app.post('/api/auth/register', register);
 app.post('/api/auth/login', login);
 app.post('/api/auth/logout', { preHandler: authenticate }, logout);

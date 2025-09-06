@@ -194,6 +194,23 @@ function showMessage(text: string, type: "success" | "error"): void {
     }, 5000);
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  // 🔑 Check if Google OAuth sent back a token in the hash
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  const token = hash.get('token');
+  const viaGoogle = hash.get('viaGoogle');
+  if (token) {
+    localStorage.setItem('token', token);
+    if (viaGoogle === "true")
+            localStorage.setItem('viaGoogle', viaGoogle);
+    else
+            localStorage.removeItem('viaGoogle');
+    window.location.hash = ''; // clean up the URL
+    showMessage('Google login successful!', 'success');
+    window.location.href = '/';
+  }
+});
+
 
 // Make functions available globally
 (window as any).register = register;

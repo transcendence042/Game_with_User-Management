@@ -32,6 +32,15 @@
                     </div>
                     <button type="submit" class="w-full p-3 bg-indigo-600 text-white border-none rounded-md text-base font-medium cursor-pointer transition-colors duration-300 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Login</button>
                 </form>
+                <div class="mt-4 text-center">
+                    <!-- If our frontend runs separately (like http://localhost:4242 for React/Vue and backend on http://localhost:3001) then,
+                    👉 We need to change it to: "window.location.href='http://localhost:3001/auth/google'"-->
+                    <button onclick="window.location.href='/auth/google'" class="w-full flex items-center justify-center gap-2 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                        <!--alt="Google" is only shown if the image fails to load -->
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                        Sign in with Google
+                    </button>
+                </div>
             </div>
 
             <!-- Register Form -->
