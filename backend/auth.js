@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import { User, Friendship, Match } from './db.js';
 import { Op } from 'sequelize';
-import { request } from 'undici';//is used to request information (the user's profile data) from Google after the user authenticates with Google OAuth2.
 
 // Google OAuth2 callback
 export async function authGoogleCallback(req, reply) {
@@ -9,10 +8,10 @@ export async function authGoogleCallback(req, reply) {
   const accessToken = tokenResponse.token.access_token;
 
   // Fetch user profile from Google
-  const { body } = await request('https://openidconnect.googleapis.com/v1/userinfo', {
+  const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  const profile = await body.json();
+  const profile = await response.json();
 
   // Find or create user in DB
   let user = await User.findOne({ where: { provider: 'google', providerId: profile.sub } });
