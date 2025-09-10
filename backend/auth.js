@@ -35,7 +35,7 @@ export async function authGoogleCallback(req, reply) {
   );
 
   // Redirect back to frontend with JWT in URL fragment
-    return reply.redirect(`http://127.0.0.1:80/login.html#token=${myJwt}&viaGoogle=true`);
+    return reply.redirect(`http://localhost:3000/login.html#token=${myJwt}&viaGoogle=true`);
 }
 
 export async function register(req, reply) {

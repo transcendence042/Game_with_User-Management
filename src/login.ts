@@ -92,11 +92,14 @@ async function register(event?: SubmitEvent): Promise<void> {
 			password: (formData.get('password') as string) || ""
 		};
 
+		/*
 		if (isValidPassword(password)) {
 			alert("Password must have at least one lowercase letter, one eppercase letter, one number, one special character, and at least 8 characters");
 			if (event) (event.target as HTMLFormElement).reset();
 			return ;
 		}
+		*/
+		
 		try {
 			const response = await fetch("/api/auth/register", {
 				method: "POST",

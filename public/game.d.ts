@@ -32,6 +32,11 @@ interface GameEndData {
     winner: string;
     finalScore: string;
 }
+interface Roomstatus {
+    roomId: string;
+    status: string;
+    message: string;
+}
 declare const canvas: HTMLCanvasElement;
 declare const ctx: CanvasRenderingContext2D;
 declare let gameState: GameState | null;

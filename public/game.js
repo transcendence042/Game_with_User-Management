@@ -1,4 +1,17 @@
 "use strict";
+// Game canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+// Game state
+let gameState = null;
+let isPlayer1 = false;
+let roomId = null;
+socket.on("checkRoomStatus", (roomState) => {
+    alert(`${roomState.message}`);
+    if (roomState.status === "updateRoom") {
+        roomId = roomState.roomId;
+    }
+});
 socket.on("lobbyUpdate", (rooms) => {
     const lobbyDiv = document.getElementById("lobby");
     if (!lobbyDiv)
@@ -11,13 +24,7 @@ socket.on("lobbyUpdate", (rooms) => {
         rooms.forEach((room) => {
             const btn = document.createElement("button");
             btn.textContent = `${room.roomId} (${room.players}/2)`;
-            if (room.players >= 2) {
-                btn.disabled = true; // show but disabled
-                btn.style.opacity = "0.5";
-            }
-            else {
-                btn.onclick = () => socket.emit("joinRoom", room.roomId);
-            }
+            btn.onclick = () => socket.emit("joinRoom", room.roomId);
             lobbyDiv.appendChild(btn);
         });
     }
@@ -79,13 +86,6 @@ socket.on("opponentReconnected", (msg) => {
         playerInfoElement.textContent = msg.message;
     }
 });
-// Game canvas and context
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-// Game state
-let gameState = null;
-let isPlayer1 = false;
-let roomId = null;
 // Socket event listeners
 socket.on('playerAssignment', (data) => {
     isPlayer1 = data.isPlayer1;

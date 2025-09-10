@@ -40,6 +40,30 @@ interface GameEndData {
   finalScore: string;
 }
 
+interface Roomstatus {
+	roomId: string,
+	status: string,
+	message: string
+}
+
+// Game canvas and context
+const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+
+// Game state
+let gameState: GameState | null = null;
+let isPlayer1: boolean = false;
+let roomId: string | null = null;
+
+
+socket.on("checkRoomStatus", (roomState: Roomstatus) => {
+	alert(`${roomState.message}`);
+	if (roomState.status === "updateRoom") {
+		roomId = roomState.roomId;
+	}
+})
+
+
 socket.on("lobbyUpdate", (rooms: LobbyRoom[]) => {
     const lobbyDiv = document.getElementById("lobby");
     if (!lobbyDiv) return;
@@ -51,14 +75,8 @@ socket.on("lobbyUpdate", (rooms: LobbyRoom[]) => {
         rooms.forEach((room: LobbyRoom) => {
             const btn = document.createElement("button");
             btn.textContent = `${room.roomId} (${room.players}/2)`;
-
-            if (room.players >= 2) {
-                btn.disabled = true; // show but disabled
-                btn.style.opacity = "0.5";
-            } else {
-                btn.onclick = () => socket.emit("joinRoom", room.roomId);
-            }
-
+		
+            btn.onclick = () => socket.emit("joinRoom", room.roomId);
             lobbyDiv.appendChild(btn);
         });
     }
@@ -132,16 +150,6 @@ socket.on("opponentReconnected", (msg: GameMessage) => {
         playerInfoElement.textContent = msg.message;
     }
 });
-
-
-// Game canvas and context
-const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-
-// Game state
-let gameState: GameState | null = null;
-let isPlayer1: boolean = false;
-let roomId: string | null = null;
 
 // Socket event listeners
 socket.on('playerAssignment', (data: PlayerAssignment) => {

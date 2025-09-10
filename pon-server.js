@@ -190,6 +190,36 @@ io.on("connection", (socket) => {
     socket.emit("lobbyUpdate", getLobbyInfo());
 
     socket.on("joinRoom", (requestedRoomId) => {
+
+		const checkRoom = gameRooms[requestedRoomId];
+		if (checkRoom) {
+			const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);
+			if (existingPlayer) {
+				socket.emit("checkRoomStatus",  {
+					roomId: requestedRoomId,
+					status: "updateRoom",
+					message: `You are in the ${requestedRoomId}!`
+
+				});
+				return ;
+			}
+		}
+
+		if (checkRoom) {
+			if (checkRoom.players.length == 2) {
+				const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);
+				if (!existingPlayer) {
+					socket.emit("checkRoomStatus", {
+					roomId: requestedRoomId,
+					status: "roomFull",
+					message: `The ${requestedRoomId} is full!`
+
+				});
+					return ;
+				}
+			}
+		}
+
 		let roomId = requestedRoomId || createRoomId();
 
         // Create room if it doesn't exist
@@ -199,44 +229,12 @@ io.on("connection", (socket) => {
                 players: [],
                 gameState: createGameState(),
                 startTime: Date.now(),
+				continueVotes: {}
             };
             console.log(`🆕 Room created: ${roomId}`);
         }
 
 		const room = gameRooms[roomId];
-
-		// ✅ Check if this user is already in the room (reconnect case)
-		const existingPlayer = room.players.find(p => p.userId === socket.user.id);
-		if (existingPlayer) {
-			existingPlayer.id = socket.id;
-			existingPlayer.disconnected = false;
-
-            console.log(`----------->    existing Player id: ${existingPlayer.id}`)
-			if (existingPlayer.disconnectTimer) {
-				clearTimeout(existingPlayer.disconnectTimer);
-				delete existingPlayer.disconnectTimer;
-			}
-
-			socket.join(roomId);
-			socket.roomId = roomId;
-			socket.isPlayer1 = existingPlayer.isPlayer1;
-
-			console.log(`✅ ${socket.user.id} reconnected to ${roomId}`);
-
-			socket.emit("gameUpdate", room.gameState);
-            socket.emit("playerAssignment", {
-				isPlayer1: existingPlayer.isPlayer1,
-				roomId,
-				playersInRoom: room.players.length,
-				message: `Room ${roomId} - You are Player ${existingPlayer.isPlayer1 ? "1" : "2"}`
-			});
-
-			socket.to(roomId).emit("opponentReconnected", {
-				message: "✅ Opponent reconnected!"
-			});
-
-			return; // stop here, don’t add them as a new player
-		}
 
 		// 👇 if not reconnecting → normal new player join logic
         //this is handle in the emit("joinRoom") in the fron-end so it can safely be remove
@@ -294,27 +292,16 @@ io.on("connection", (socket) => {
 			socket.to(roomId).emit("opponentDisconnected", {
 				message: "⚠️ Opponent disconnected. Waiting 10s for them to return..."
 			});
+			room.players = room.players.filter(p => p.userId !== player.userId);
 
-			// start grace timer
-			player.disconnectTimer = setTimeout(() => {
-				const stillDisconnected = room.players.find(
-					p => p.userId === player.userId && p.disconnected
-				);
+			if (room.players.length === 0) {
+				delete gameRooms[roomId];
+				console.log(`🗑️ Room ${roomId} deleted`);
+			} else {
+				io.to(roomId).emit("opponentLeft", { message: "Opponent left the game." });
+			}
 
-				if (stillDisconnected) {
-					console.log(`❌ ${player.userId} did not return, removing from ${roomId}`);
-					room.players = room.players.filter(p => p.userId !== player.userId);
-
-					if (room.players.length === 0) {
-						delete gameRooms[roomId];
-						console.log(`🗑️ Room ${roomId} deleted`);
-					} else {
-						io.to(roomId).emit("opponentLeft", { message: "Opponent left the game." });
-					}
-
-					io.emit("lobbyUpdate", getLobbyInfo());
-				}
-			}, 5000); // 10s grace
+			io.emit("lobbyUpdate", getLobbyInfo());
 		}
 	});
 
