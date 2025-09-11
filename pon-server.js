@@ -112,8 +112,8 @@ function createGameState() {
     return {
         ball: { x: 400, y: 200, vx: 2, vy: 2, radius: 10 },
         player1: { x: 10, y: 150, width: 10, height: 100, score: 0 },
-        player2: { x: 780, y: 150, width: 10, height: 100, score: 0 },
-        gameEnded: false
+        player2: { x: 780, y: 150, width: 10, height: 100, score: 0},
+        gameEnded: false,
     };
 }
 
@@ -146,9 +146,9 @@ setInterval(async () => {
     for (let roomId in gameRooms) {
         const room = gameRooms[roomId];
 
-        if (room.players.length === 2) {
+        if (room.players.length === 2) {			
             await updateGame(room.gameState, roomId);
-            io.to(roomId).emit('gameUpdate', room.gameState);
+            io.to(roomId).emit('gameUpdate', room.gameState, roomId);
         }
 
         if (room.players.length === 0) {
@@ -157,7 +157,7 @@ setInterval(async () => {
             io.emit("lobbyUpdate", getLobbyInfo());
         }
     }
-}, 1000 / 60);
+}, 1000/60);
 
 // Protect socket with JWT
 io.use(async (socket, next) => {
@@ -192,34 +192,36 @@ io.on("connection", (socket) => {
     socket.on("joinRoom", (requestedRoomId) => {
 
 		const checkRoom = gameRooms[requestedRoomId];
-		if (checkRoom) {
+		if (checkRoom && checkRoom.players.length == 2) {
 			const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);
-			if (existingPlayer) {
-				socket.emit("checkRoomStatus",  {
-					roomId: requestedRoomId,
-					status: "updateRoom",
-					message: `You are in the ${requestedRoomId}!`
-
-				});
+			if (!existingPlayer) {
+				socket.emit("checkRoomStatus", {
+				roomId: requestedRoomId,
+				status: "roomFull",
+				message: `The ${requestedRoomId} is full!`,
+				isPlayer1: false })
+				console.log("checking RoomStatus: ->roomFull");
 				return ;
 			}
 		}
-
 		if (checkRoom) {
-			if (checkRoom.players.length == 2) {
-				const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);
-				if (!existingPlayer) {
-					socket.emit("checkRoomStatus", {
-					roomId: requestedRoomId,
-					status: "roomFull",
-					message: `The ${requestedRoomId} is full!`
+			const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);
 
+			if (existingPlayer) {
+				socket.join(requestedRoomId);
+				socket.roomId = requestedRoomId;
+				socket.isPlayer1 = existingPlayer.isPlayer1;
+				socket.emit("checkRoomStatus",  {
+					roomId: requestedRoomId,
+					status: "updateRoom",
+					message: `You are in the ${requestedRoomId}!`,
+					isPlayer1: existingPlayer.isPlayer1
 				});
-					return ;
-				}
+				console.log("checking RoomStatus: ->updateRoom");
+				return ;
 			}
 		}
-
+		
 		let roomId = requestedRoomId || createRoomId();
 
         // Create room if it doesn't exist
@@ -296,6 +298,7 @@ io.on("connection", (socket) => {
 
 			if (room.players.length === 0) {
 				delete gameRooms[roomId];
+				releaseRoomId(roomId);
 				console.log(`🗑️ Room ${roomId} deleted`);
 			} else {
 				io.to(roomId).emit("opponentLeft", { message: "Opponent left the game." });
@@ -305,32 +308,6 @@ io.on("connection", (socket) => {
 		}
 	});
 
-	socket.on("continueVote", ({ roomId, vote }) => {
-        if (!gameRooms[roomId]) return;
-
-        const room = gameRooms[roomId];
-        room.continueVotes[socket.user.id] = vote; // "yes" or "no"
-
-        //If any player already voted "no" → stop immediately
-        if (Object.values(room.continueVotes).some(v => v === "no")) {
-            io.to(roomId).emit("gameClosed", {
-                message: "Game ended. At least one player declined."
-            });
-            delete gameRooms[roomId];
-            return;
-        }
-
-        //Only restart if both have voted and both are "yes"
-        if (Object.keys(room.continueVotes).length === 2) {
-            if (Object.values(room.continueVotes).every(v => v === "yes")) {
-                room.gameState = createGameState();
-                io.to(roomId).emit("gameRestarted", {
-                    message: "Both players agreed! Restarting..."
-                });
-                io.to(roomId).emit("gameUpdate", room.gameState);
-            }
-        }
-    });
 
 });
 // Game physics
@@ -392,13 +369,11 @@ async function updateGame(gameState, roomId) {
                 
                 await winnerUser.update({ wins: winnerUser.wins + 1 });
                 await loserUser.update({ losses: loserUser.losses + 1 });
-
-                // reset votes
-                gameRooms[roomId].continueVotes = {};
-                setTimeout(() => {io.to(roomId).emit("continuePrompt", {
-                    message: "Do you want to play again? (Yes/No)"
-                })}, 300)
             }
+			delete gameRooms[roomId];
+			releaseRoomId(roomId);
+			console.log(`🗑️ Room ${roomId} deleted`);
+			io.emit("lobbyUpdate", getLobbyInfo());
         }
     }
 }

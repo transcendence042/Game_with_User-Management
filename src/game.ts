@@ -9,6 +9,7 @@ interface GameState {
   player2: Player;
   ball: Ball;
   gameEnded: boolean;
+  gameRendering: boolean;
 }
 
 interface Player {
@@ -17,6 +18,7 @@ interface Player {
   width: number;
   height: number;
   score: number;
+  render: boolean;
 }
 
 interface Ball {
@@ -43,7 +45,13 @@ interface GameEndData {
 interface Roomstatus {
 	roomId: string,
 	status: string,
-	message: string
+	message: string,
+	isPlayer1: boolean
+}
+
+interface GameReset {
+	message: string,
+	roomId: string
 }
 
 // Game canvas and context
@@ -60,6 +68,11 @@ socket.on("checkRoomStatus", (roomState: Roomstatus) => {
 	alert(`${roomState.message}`);
 	if (roomState.status === "updateRoom") {
 		roomId = roomState.roomId;
+		isPlayer1 = roomState.isPlayer1;
+		const playerInfoElement = document.getElementById('playerInfo');
+		if (playerInfoElement) {
+			playerInfoElement.textContent = `You are in the ${roomId}!`;
+		}
 	}
 })
 
@@ -95,29 +108,6 @@ socket.on('connect_error', (err: Error) => {
 
 socket.on("gameEnded", (data: GameEndData) => {
     //alert(`Game Over! ${data.winner} wins with score: ${data.finalScore}`);
-});
-
-// ask players if they want to continue
-socket.on("continuePrompt", (data: GameMessage) => {
-    const modal = document.getElementById("continueModal") as HTMLDivElement;
-    const message = document.getElementById("continueMessage") as HTMLParagraphElement;
-    const yesBtn = document.getElementById("continueYes") as HTMLButtonElement;
-    const noBtn = document.getElementById("continueNo") as HTMLButtonElement;
-
-    if (!modal || !message || !yesBtn || !noBtn) return;
-
-    message.textContent = data.message;
-    modal.style.display = "flex";
-
-    yesBtn.onclick = () => {
-        socket.emit("continueVote", { roomId, vote: "yes" });
-        modal.style.display = "none";
-    };
-
-    noBtn.onclick = () => {
-        socket.emit("continueVote", { roomId, vote: "no" });
-        modal.style.display = "none";
-    };
 });
 
 // ✅ Close modal if the server says the game was closed
@@ -168,10 +158,12 @@ socket.on('gameReady', (data: GameMessage) => {
     }
 });
 
-socket.on('gameUpdate', (data: GameState) => {
-    gameState = data;
-    updateScore();
-    draw();
+socket.on('gameUpdate', (data: GameState, roomToRender: string) => {
+	if (roomToRender === roomId) {
+        gameState = data;
+		updateScore();
+    	draw();
+    }
 });
 
 socket.on('playerDisconnected', (data: GameMessage) => {
@@ -216,7 +208,7 @@ function updateScore(): void {
 
 // Draw the game
 function draw(): void {
-    if (!gameState) return;
+	if (!gameState || !roomId) return;
     
     // Clear canvas
     ctx.fillStyle = '#000';

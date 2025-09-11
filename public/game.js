@@ -10,6 +10,11 @@ socket.on("checkRoomStatus", (roomState) => {
     alert(`${roomState.message}`);
     if (roomState.status === "updateRoom") {
         roomId = roomState.roomId;
+        isPlayer1 = roomState.isPlayer1;
+        const playerInfoElement = document.getElementById('playerInfo');
+        if (playerInfoElement) {
+            playerInfoElement.textContent = `You are in the ${roomId}!`;
+        }
     }
 });
 socket.on("lobbyUpdate", (rooms) => {
@@ -39,25 +44,6 @@ socket.on('connect_error', (err) => {
 });
 socket.on("gameEnded", (data) => {
     //alert(`Game Over! ${data.winner} wins with score: ${data.finalScore}`);
-});
-// ask players if they want to continue
-socket.on("continuePrompt", (data) => {
-    const modal = document.getElementById("continueModal");
-    const message = document.getElementById("continueMessage");
-    const yesBtn = document.getElementById("continueYes");
-    const noBtn = document.getElementById("continueNo");
-    if (!modal || !message || !yesBtn || !noBtn)
-        return;
-    message.textContent = data.message;
-    modal.style.display = "flex";
-    yesBtn.onclick = () => {
-        socket.emit("continueVote", { roomId, vote: "yes" });
-        modal.style.display = "none";
-    };
-    noBtn.onclick = () => {
-        socket.emit("continueVote", { roomId, vote: "no" });
-        modal.style.display = "none";
-    };
 });
 // ✅ Close modal if the server says the game was closed
 socket.on("gameClosed", (data) => {
@@ -101,10 +87,12 @@ socket.on('gameReady', (data) => {
         playerInfoElement.textContent = data.message;
     }
 });
-socket.on('gameUpdate', (data) => {
-    gameState = data;
-    updateScore();
-    draw();
+socket.on('gameUpdate', (data, roomToRender) => {
+    if (roomToRender === roomId) {
+        gameState = data;
+        updateScore();
+        draw();
+    }
 });
 socket.on('playerDisconnected', (data) => {
     const playerInfoElement = document.getElementById('playerInfo');
@@ -142,7 +130,7 @@ function updateScore() {
 }
 // Draw the game
 function draw() {
-    if (!gameState)
+    if (!gameState || !roomId)
         return;
     // Clear canvas
     ctx.fillStyle = '#000';

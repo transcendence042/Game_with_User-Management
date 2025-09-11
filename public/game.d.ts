@@ -7,6 +7,7 @@ interface GameState {
     player2: Player;
     ball: Ball;
     gameEnded: boolean;
+    gameRendering: boolean;
 }
 interface Player {
     x: number;
@@ -14,6 +15,7 @@ interface Player {
     width: number;
     height: number;
     score: number;
+    render: boolean;
 }
 interface Ball {
     x: number;
@@ -36,6 +38,11 @@ interface Roomstatus {
     roomId: string;
     status: string;
     message: string;
+    isPlayer1: boolean;
+}
+interface GameReset {
+    message: string;
+    roomId: string;
 }
 declare const canvas: HTMLCanvasElement;
 declare const ctx: CanvasRenderingContext2D;
