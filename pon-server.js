@@ -189,8 +189,12 @@ io.on("connection", (socket) => {
     // Send current lobby info
     socket.emit("lobbyUpdate", getLobbyInfo());
 
-    socket.on("joinRoom", (requestedRoomId) => {
+    socket.on("joinRoom", (requestedRoomId, startGame) => {
 
+		if (!startGame) {
+			socket.emit("chooseOpponent");
+			return ;
+		}
 		const checkRoom = gameRooms[requestedRoomId];
 		if (checkRoom && checkRoom.players.length == 2) {
 			const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);

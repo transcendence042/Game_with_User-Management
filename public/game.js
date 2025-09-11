@@ -17,6 +17,28 @@ socket.on("checkRoomStatus", (roomState) => {
         }
     }
 });
+socket.on("chooseOpponent", () => {
+    const modal = document.getElementById("continueModal");
+    const message = document.getElementById("continueMessage");
+    const yesBtn = document.getElementById("continueYes");
+    const noBtn = document.getElementById("continueNo");
+    if (!modal || !message || !yesBtn || !noBtn)
+        return;
+    message.textContent = "Who do you want to play against?";
+    modal.style.display = "flex";
+    yesBtn.onclick = () => {
+        /*
+        const levelDifficulty: any = document.getElementById("levelDifficulty");
+        levelDifficulty.style.display = "flex";
+        */
+        socket.emit("joinRoom", null, true);
+        modal.style.display = "none";
+    };
+    noBtn.onclick = () => {
+        socket.emit("joinRoom", null, true);
+        modal.style.display = "none";
+    };
+});
 socket.on("lobbyUpdate", (rooms) => {
     const lobbyDiv = document.getElementById("lobby");
     if (!lobbyDiv)
@@ -29,13 +51,13 @@ socket.on("lobbyUpdate", (rooms) => {
         rooms.forEach((room) => {
             const btn = document.createElement("button");
             btn.textContent = `${room.roomId} (${room.players}/2)`;
-            btn.onclick = () => socket.emit("joinRoom", room.roomId);
+            btn.onclick = () => socket.emit("joinRoom", room.roomId, true);
             lobbyDiv.appendChild(btn);
         });
     }
     const createBtn = document.createElement("button");
     createBtn.textContent = "➕ Create New Room";
-    createBtn.onclick = () => socket.emit("joinRoom", null);
+    createBtn.onclick = () => socket.emit("joinRoom", null, false);
     lobbyDiv.appendChild(createBtn);
 });
 socket.on('connect_error', (err) => {

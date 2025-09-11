@@ -63,7 +63,6 @@ let gameState: GameState | null = null;
 let isPlayer1: boolean = false;
 let roomId: string | null = null;
 
-
 socket.on("checkRoomStatus", (roomState: Roomstatus) => {
 	alert(`${roomState.message}`);
 	if (roomState.status === "updateRoom") {
@@ -76,6 +75,30 @@ socket.on("checkRoomStatus", (roomState: Roomstatus) => {
 	}
 })
 
+socket.on("chooseOpponent", () => {
+    const modal = document.getElementById("continueModal");
+    const message = document.getElementById("continueMessage");
+    const yesBtn: any = document.getElementById("continueYes");
+    const noBtn: any = document.getElementById("continueNo");
+
+    if (!modal || !message || !yesBtn || !noBtn) return;
+
+    message.textContent = "Who do you want to play against?";
+    modal.style.display = "flex";
+    yesBtn.onclick = () => {
+		/*
+        const levelDifficulty: any = document.getElementById("levelDifficulty");
+        levelDifficulty.style.display = "flex";
+		*/
+        socket.emit("joinRoom", null, true);
+        modal.style.display = "none";
+    };
+
+    noBtn.onclick = () => {
+        socket.emit("joinRoom", null, true);
+        modal.style.display = "none";
+    };
+});
 
 socket.on("lobbyUpdate", (rooms: LobbyRoom[]) => {
     const lobbyDiv = document.getElementById("lobby");
@@ -89,14 +112,14 @@ socket.on("lobbyUpdate", (rooms: LobbyRoom[]) => {
             const btn = document.createElement("button");
             btn.textContent = `${room.roomId} (${room.players}/2)`;
 		
-            btn.onclick = () => socket.emit("joinRoom", room.roomId);
+            btn.onclick = () => socket.emit("joinRoom", room.roomId, true);
             lobbyDiv.appendChild(btn);
         });
     }
 
     const createBtn = document.createElement("button");
     createBtn.textContent = "➕ Create New Room";
-    createBtn.onclick = () => socket.emit("joinRoom", null);
+    createBtn.onclick = () => socket.emit("joinRoom", null, false);
     lobbyDiv.appendChild(createBtn);
 });
 
