@@ -112,7 +112,7 @@ function createGameState() {
     return {
         ball: { x: 400, y: 200, vx: 2, vy: 2, radius: 10 },
         player1: { x: 10, y: 150, width: 10, height: 100, score: 0 },
-        player2: { x: 780, y: 150, width: 10, height: 100, score: 0},
+        player2: { x: 780, y: 150, width: 10, height: 100, score: 0, targetY: 150},
         gameEnded: false,
     };
 }
@@ -146,7 +146,10 @@ setInterval(async () => {
     for (let roomId in gameRooms) {
         const room = gameRooms[roomId];
 
-        if (room.players.length === 2) {			
+        if (room.players.length === 2 || room.aiEnabled === true) {		
+			if (room.aiEnabled) {
+                updateAIPaddle(room.gameState.player2, room.aiDifficulty);
+            }	
             await updateGame(room.gameState, roomId);
             io.to(roomId).emit('gameUpdate', room.gameState, roomId);
         }
@@ -158,6 +161,55 @@ setInterval(async () => {
         }
     }
 }, 1000/60);
+
+// ---------------- AI Logic ----------------
+
+//AI Logic with Difficulty
+const DIFFICULTY_SETTINGS = {
+    easy:    { paddleSpeed: 3, errorRange: 40, refreshRate: 1500 }, // slow + big errors
+    medium:  { paddleSpeed: 5, errorRange: 20, refreshRate: 1000 }, // balanced
+    hard:    { paddleSpeed: 8, errorRange: 5,  refreshRate: 500 }   // fast + precise
+};
+
+function refreshAILogic(room) {
+    const { errorRange } = DIFFICULTY_SETTINGS[room.aiDifficulty];
+    const ball = room.gameState.ball;
+    const paddle = room.gameState.player2;
+
+    if (ball.vx > 0) { 
+        const timeToReach = (paddle.x - ball.x) / ball.vx;
+        let predictedY = ball.y + ball.vy * timeToReach;
+
+        predictedY = Math.max(0, Math.min(400 - paddle.height, predictedY));
+        const error = Math.random() * errorRange - errorRange / 2;
+        paddle.targetY = predictedY + error;
+    } else {
+        paddle.targetY = 200 - paddle.height / 2;
+    }
+}
+
+function updateAIPaddle(paddle, difficulty) {
+    const { paddleSpeed } = DIFFICULTY_SETTINGS[difficulty];
+    if (paddle.y < paddle.targetY) {
+        paddle.y += Math.min(paddleSpeed, paddle.targetY - paddle.y);
+    } else if (paddle.y > paddle.targetY) {
+        paddle.y -= Math.min(paddleSpeed, paddle.y - paddle.targetY);
+    }
+}
+
+function startAIInterval(roomId) {
+    const room = gameRooms[roomId];
+    if (!room || !room.aiEnabled) return;
+
+    const { refreshRate } = DIFFICULTY_SETTINGS[room.aiDifficulty];
+
+    // Clear old timer if exists
+    if (room.aiTimer) clearInterval(room.aiTimer);
+
+    room.aiTimer = setInterval(() => {
+        refreshAILogic(room);
+    }, refreshRate);
+}
 
 // Protect socket with JWT
 io.use(async (socket, next) => {
@@ -189,14 +241,15 @@ io.on("connection", (socket) => {
     // Send current lobby info
     socket.emit("lobbyUpdate", getLobbyInfo());
 
-    socket.on("joinRoom", (requestedRoomId, startGame) => {
+    socket.on("joinRoom", (requestedRoomId, startGame, { mode }) => {
 
 		if (!startGame) {
 			socket.emit("chooseOpponent");
 			return ;
 		}
 		const checkRoom = gameRooms[requestedRoomId];
-		if (checkRoom && checkRoom.players.length == 2) {
+		//here we can stop users from entering a room where AI mode is activated!
+		if (checkRoom && (checkRoom.players.length === 2 || checkRoom.aiEnabled === true)) {
 			const existingPlayer = checkRoom.players.find(p => p.userId === socket.user.id);
 			if (!existingPlayer) {
 				socket.emit("checkRoomStatus", {
@@ -229,13 +282,23 @@ io.on("connection", (socket) => {
 		let roomId = requestedRoomId || createRoomId();
 
         // Create room if it doesn't exist
+		if (mode === "AI") {
+			gameRooms[roomId] = {
+				players: [],
+				gameState: createGameState(),
+				startTime: Date.now(),
+				aiEnabled: true,
+				aiDifficulty: "medium"
+				
+			}
+		}
         if (!gameRooms[roomId]) {
             gameRooms[roomId] = 
             {
                 players: [],
                 gameState: createGameState(),
                 startTime: Date.now(),
-				continueVotes: {}
+				aiEnabled: false,
             };
             console.log(`🆕 Room created: ${roomId}`);
         }
@@ -263,13 +326,30 @@ io.on("connection", (socket) => {
 			message: `Room ${roomId} - You are Player ${isPlayer1 ? "1" : "2"}`
 		});
 
-		io.emit("lobbyUpdate", getLobbyInfo());
-
-		if (room.players.length === 2) {
+		if (mode === "AI") {
+            startAIInterval(roomId);
 			io.to(roomId).emit("gameReady", { message: `Game ready in ${roomId}!` });
 		}
+		else if (room.players.length === 2) {
+			io.to(roomId).emit("gameReady", { message: `Game ready in ${roomId}!` });
+		}
+		else {
+			socket.emit("waitingForPlayer", {
+                message: `Waiting for an opponent to join room ${roomId}...`
+            });
+		}
+		io.emit("lobbyUpdate", getLobbyInfo());
+
 	});
 
+	socket.on('setDifficulty', (data, roomId) => {
+        const room = gameRooms[roomId];
+        if (room && ["easy", "medium", "hard"].includes(data.level)) {
+            room.aiDifficulty = data.level;
+            console.log(`🎚️ Difficulty for ${roomId} set to ${data.level}`);
+            startAIInterval(roomId); // restart with new refreshRate
+        }
+    });
 
     // Paddle movement
     socket.on("paddleMove", (data) => {
@@ -374,11 +454,11 @@ async function updateGame(gameState, roomId) {
                 await winnerUser.update({ wins: winnerUser.wins + 1 });
                 await loserUser.update({ losses: loserUser.losses + 1 });
             }
-			delete gameRooms[roomId];
-			releaseRoomId(roomId);
-			console.log(`🗑️ Room ${roomId} deleted`);
-			io.emit("lobbyUpdate", getLobbyInfo());
         }
+		delete gameRooms[roomId];
+		releaseRoomId(roomId);
+		console.log(`🗑️ Room ${roomId} deleted`);
+		io.emit("lobbyUpdate", getLobbyInfo());
     }
 }
 

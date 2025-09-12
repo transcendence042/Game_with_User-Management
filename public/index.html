@@ -57,6 +57,13 @@
         </div>
       </div>
 
+	  <div id="levelDifficulty" style="display: none; justify-content: center; align-items: center; margin-bottom: 16px;">
+        <div class="bg-gray-800 text-green-400 p-4 rounded-lg text-center shadow-lg flex space-x-4">
+            <button onclick="setDifficulty('easy')" class="bg-green-600 px-4 py-2 rounded-lg hover:bg-green-700 text-white font-bold">Easy 🟢</button>
+            <button onclick="setDifficulty('medium')" class="bg-yellow-500 px-4 py-2 rounded-lg hover:bg-yellow-600 text-white font-bold">Medium 🟡</button>
+            <button onclick="setDifficulty('hard')" class="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 text-white font-bold">Hard 🔴</button>
+        </div>
+    </div>
       <!-- Game Canvas -->
       <div class="flex justify-center mb-6">
         <canvas id="gameCanvas" width="800" height="400" class="border-2 border-gray-700 rounded-lg bg-black shadow-lg"></canvas>

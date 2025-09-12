@@ -86,19 +86,33 @@ socket.on("chooseOpponent", () => {
     message.textContent = "Who do you want to play against?";
     modal.style.display = "flex";
     yesBtn.onclick = () => {
-		/*
         const levelDifficulty: any = document.getElementById("levelDifficulty");
         levelDifficulty.style.display = "flex";
-		*/
-        socket.emit("joinRoom", null, true);
+        socket.emit("joinRoom", null, true, {mode: "AI"});
         modal.style.display = "none";
     };
 
     noBtn.onclick = () => {
-        socket.emit("joinRoom", null, true);
+        socket.emit("joinRoom", null, true, {mode: "PVP"});
         modal.style.display = "none";
     };
 });
+
+function setDifficulty(level: string) {
+    // Example: send difficulty to server or update game settings
+    socket.emit('setDifficulty', { level }, roomId);
+    // Optionally, update UI or show a message
+    console.log('Difficulty set to:', level, ' in the |' , roomId, '|');
+}
+
+
+socket.on("waitingForPlayer", (data: GameMessage) => {
+    const playerInfoElement = document.getElementById('playerInfo');
+    if (playerInfoElement) {
+        playerInfoElement.textContent = data.message;
+    }
+});
+
 
 socket.on("lobbyUpdate", (rooms: LobbyRoom[]) => {
     const lobbyDiv = document.getElementById("lobby");
@@ -112,14 +126,14 @@ socket.on("lobbyUpdate", (rooms: LobbyRoom[]) => {
             const btn = document.createElement("button");
             btn.textContent = `${room.roomId} (${room.players}/2)`;
 		
-            btn.onclick = () => socket.emit("joinRoom", room.roomId, true);
+            btn.onclick = () => socket.emit("joinRoom", room.roomId, true, {mode: "NOTHING"});
             lobbyDiv.appendChild(btn);
         });
     }
 
     const createBtn = document.createElement("button");
     createBtn.textContent = "➕ Create New Room";
-    createBtn.onclick = () => socket.emit("joinRoom", null, false);
+    createBtn.onclick = () => socket.emit("joinRoom", null, false, {mode: "NOTHING"});
     lobbyDiv.appendChild(createBtn);
 });
 
